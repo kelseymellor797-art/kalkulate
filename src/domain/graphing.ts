@@ -8,6 +8,7 @@ export type GraphAst =
 export type GraphPoint = { x: number; y: number };
 export type GraphSegment = GraphPoint[];
 export type GraphViewport = { xMin: number; xMax: number; yMin: number; yMax: number };
+export type TraceValue = { y: number | null; formatted: string };
 
 const FUNCTIONS = new Set(["sin", "cos", "tan", "sqrt", "abs"]);
 type Token = { kind: "number" | "identifier" | "operator" | "paren"; value: string };
@@ -125,6 +126,27 @@ export function evaluateGraph(ast: GraphAst, x: number): number {
       return Math.abs(value);
     }
   }
+}
+
+export function formatGraphNumber(value: number | null): string {
+  if (value === null || !Number.isFinite(value)) return "undefined";
+  if (Object.is(value, -0)) return "0";
+  const absolute = Math.abs(value);
+  if (absolute !== 0 && (absolute < 0.0001 || absolute >= 1e8)) return value.toExponential(4).replace(/\.?(\d*?)0+e/, "$1e");
+  return Number(value.toFixed(4)).toString();
+}
+
+export function evaluateTrace(ast: GraphAst, x: number): TraceValue {
+  const y = evaluateGraph(ast, x);
+  return { y: Number.isFinite(y) ? y : null, formatted: formatGraphNumber(y) };
+}
+
+export function graphToPixel(value: GraphPoint, viewport: GraphViewport, width: number, height: number) {
+  return { x: ((value.x - viewport.xMin) / (viewport.xMax - viewport.xMin)) * width, y: height - ((value.y - viewport.yMin) / (viewport.yMax - viewport.yMin)) * height };
+}
+
+export function pixelToGraph(pixelX: number, pixelY: number, viewport: GraphViewport, width: number, height: number): GraphPoint {
+  return { x: viewport.xMin + (pixelX / width) * (viewport.xMax - viewport.xMin), y: viewport.yMax - (pixelY / height) * (viewport.yMax - viewport.yMin) };
 }
 
 export function sampleGraph(ast: GraphAst, viewport: GraphViewport, samples = 720): GraphSegment[] {

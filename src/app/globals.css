@@ -264,6 +264,16 @@ main {
 .function-input-row input:focus { outline: 2px solid var(--lime); outline-offset: 2px; }
 .function-input-row .key { height: auto; padding: 0 18px; }
 .graph-error { margin: 11px 0 0; color: #ffc3b4; font-size: 12px; }
+.trace-controls { display: flex; align-items: center; gap: 8px; margin-top: 15px; font: 10px ui-monospace, monospace; color: var(--muted); }
+.trace-controls label { margin: 0; color: #d0d7c9; }
+.trace-controls input { width: 100px; border: 1px solid #536147; border-radius: 5px; background: #111610; color: var(--foreground); padding: 8px 9px; font: 13px ui-monospace, monospace; }
+.trace-controls input:focus { outline: 2px solid var(--lime); outline-offset: 2px; }
+.trace-active { background: var(--lime); color: #111610; }
+.trace-help { min-width: 125px; }
+.trace-line { stroke: #e5fbb7; stroke-width: 1; stroke-dasharray: 5 4; vector-effect: non-scaling-stroke; pointer-events: none; }
+.trace-point { stroke: #111610; stroke-width: 2; vector-effect: non-scaling-stroke; pointer-events: none; }
+.trace-readout { border-top: 1px solid var(--line); padding-top: 12px; color: var(--lime); font: 10px ui-monospace, monospace; letter-spacing: 1px; }
+.function-label small { display: block; margin-top: 5px; color: var(--lime); font: 11px ui-monospace, monospace; letter-spacing: 0; }
 .graph-main { min-width: 0; padding: 10px; }
 .graph-window-wrap { position: relative; }
 .graph-window { display: block; width: 100%; min-height: 360px; border-radius: 8px; }
