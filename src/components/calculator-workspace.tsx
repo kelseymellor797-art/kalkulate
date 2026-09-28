@@ -14,6 +14,8 @@ export function CalculatorWorkspace() {
   const [repository] = useState(createHistoryRepository);
   const [records, setRecords] = useState<CalculationRecord[]>([]);
   const [historyError, setHistoryError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [historyStatus, setHistoryStatus] = useState(repository.status);
   const queue = useRef(Promise.resolve());
   const updateHistory = useCallback(
     (operation: () => Promise<void>) => {
@@ -21,16 +23,21 @@ export function CalculatorWorkspace() {
         .then(async () => {
           await operation();
           setRecords(await repository.list());
+          setHistoryStatus(repository.status);
           setHistoryError(null);
         })
         .catch(() =>
           setHistoryError(
             "History could not be updated. You can keep calculating.",
           ),
-        );
+        )
+        .finally(() => setLoading(false));
     },
     [repository],
   );
+  useEffect(() => {
+    updateHistory(async () => {});
+  }, [updateHistory]);
   const onAction = useCallback(
     (action: string) => {
       const next = transition(current.current, action);
@@ -88,7 +95,13 @@ export function CalculatorWorkspace() {
         <HistoryPanel
           records={records}
           error={historyError}
-          onClear={() => updateHistory(() => repository.clear())}
+          loading={loading}
+          status={historyStatus}
+          onClear={
+            repository.clear
+              ? () => updateHistory(() => repository.clear!())
+              : undefined
+          }
         />
       </div>
       <details className="keyboard-help">

@@ -1,16 +1,24 @@
 import type { CalculationRecord, NewCalculation } from "@/types/calculation";
+import { getSupabaseClient } from "../lib/supabase";
+import { SupabaseHistoryRepository } from "./supabase-history";
 
+export type HistoryStatus = "local" | "shared" | "offline";
 export interface HistoryRepository {
+  readonly status: HistoryStatus;
   list(): Promise<CalculationRecord[]>;
   add(calculation: NewCalculation): Promise<void>;
-  clear(): Promise<void>;
+  /** Only session-local history can be cleared. Shared data is append-only. */
+  clear?: () => Promise<void>;
 }
 
-/** Per workspace instance, never a server singleton. No data survives a reload. */
 export class MemoryHistoryRepository implements HistoryRepository {
+  readonly status = "local" as const;
   private records: CalculationRecord[] = [];
   async list() {
     return this.records.map((record) => ({ ...record }));
+  }
+  replace(records: CalculationRecord[]) {
+    this.records = records.slice(0, 10).map((record) => ({ ...record }));
   }
   async add(calculation: NewCalculation) {
     this.records = [
@@ -27,7 +35,37 @@ export class MemoryHistoryRepository implements HistoryRepository {
   }
 }
 
-// Phase 1 replaces this factory after the table and access policies exist.
+/** Fail closed to local history for this page. Never replay ambiguous failed writes. */
+export class ResilientHistoryRepository implements HistoryRepository {
+  status: HistoryStatus = "shared";
+  private fallback = new MemoryHistoryRepository();
+  constructor(private remote: HistoryRepository) {}
+  async list() {
+    if (this.status === "shared") {
+      try {
+        const records = await this.remote.list();
+        this.fallback.replace(records);
+        return records;
+      } catch {
+        this.status = "offline";
+      }
+    }
+    return this.fallback.list();
+  }
+  async add(calculation: NewCalculation) {
+    await this.fallback.add(calculation);
+    if (this.status === "shared") {
+      try {
+        await this.remote.add(calculation);
+      } catch {
+        this.status = "offline";
+      }
+    }
+  }
+}
 export function createHistoryRepository(): HistoryRepository {
-  return new MemoryHistoryRepository();
+  const client = getSupabaseClient();
+  return client
+    ? new ResilientHistoryRepository(new SupabaseHistoryRepository(client))
+    : new MemoryHistoryRepository();
 }

@@ -1,6 +1,6 @@
 # KALKULATE
 
-A focused everyday calculator with a graphite interface, lime accents, keyboard controls, and recent calculation history. Phase 0 is a functional foundation for an internship submission; cloud persistence and deployment are planned for Phase 1.
+A focused everyday calculator with a graphite interface, lime accents, keyboard controls, and recent calculation history. Phase 1 adds shared anonymous Supabase history without accounts, login, or authentication. The persistence code is ready; live database setup requires an approved KALKULATE project. Deployment is deferred.
 
 ## Stack
 
@@ -13,7 +13,7 @@ npm ci
 npm run dev
 ```
 
-Open http://localhost:3000. No credentials are required. History is held in memory in the current page and resets on refresh; it is never represented as cloud-saved.
+Open http://localhost:3000. No credentials are required. Without Supabase configuration, history stays in memory and resets on refresh. With valid public configuration and the schema installed, history is shared publicly across visitors and survives reloads.
 
 | Command              | Purpose                                                |
 | -------------------- | ------------------------------------------------------ |
@@ -26,7 +26,7 @@ Open http://localhost:3000. No credentials are required. History is held in memo
 | `npm run build`      | Production build                                       |
 | `npm start`          | Serve the production build                             |
 
-For first-time browser testing, run `npx playwright install chromium`. The browser tests start a local dev server when needed. Screenshots are written to the gitignored `artifacts/` directory.
+For first-time browser testing, run `npx playwright install chromium`. The browser tests start isolated servers on ports 3017 (no configuration) and 3018 (mocked Supabase). They override environment values, never contact a real database, and require both ports to be free. Screenshots are written to the gitignored `artifacts/` directory.
 
 ## Calculator behavior
 
@@ -44,22 +44,38 @@ Keyboard: `0–9`, `.`, `+`, `-`, `*`, `/`, `%`, `Enter`/`=`, `Escape`, `Backspa
 - `src/components/`: client workspace controller, display, keypad, and history panel.
 - `src/domain/calculator.ts`: pure state transition engine, decimal arithmetic, keyboard mapping; no React or persistence dependencies.
 - `src/types/calculation.ts`: record shape (`id`, `expression`, `result`, `created_at`), with numeric results stored as strings to preserve representation.
-- `src/repositories/history.ts`: asynchronous repository interface and per-workspace memory implementation, capped at the latest ten records. The workspace serializes writes and handles storage failures independently of calculation.
+- `src/repositories/history.ts`: asynchronous repository interface and per-workspace memory implementation, capped at the latest ten records. The workspace serializes initial loading and writes. A resilient wrapper caches history and handles storage failures independently of calculation. `src/repositories/supabase-history.ts` performs database queries.
 - `src/lib/supabase.ts`: lazy, nullable client factory; no connection is created merely by importing it.
 - Colocated unit tests and `tests/e2e/`: regression checks.
 
-## Supabase preparation
+## Supabase setup
 
-Optionally copy `.env.example` to `.env.local` and supply `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`. These are public browser configuration values. Never use a service-role or secret key in a public environment variable. `.env.local` and all other environment files except `.env.example` are ignored by Git.
+1. Select the explicitly approved **KALKULATE** Supabase project. Do not reuse another application's project by guesswork.
+2. In its SQL Editor, run [`supabase/schema.sql`](supabase/schema.sql). This is a one-time transaction that intentionally fails if `public.calculations` already exists. Inspect any existing table before deciding how to proceed; do not drop it.
+3. Copy `.env.example` to `.env.local`. Set `NEXT_PUBLIC_SUPABASE_URL` to the project's URL and `NEXT_PUBLIC_SUPABASE_ANON_KEY` to its public anon JWT or publishable key.
+4. Restart `npm run dev` (public environment values are bundled at startup/build).
+5. Complete a calculation and reload. Verify the row appears in the shared history and in the approved project's table. Verify a second browser also sees it.
 
-**Phase 0 always uses memory history, even if these variables are provided.** No table, policies, authentication, project, or remote connection has been fabricated. Missing/malformed configuration returns null. Client creation alone does not prove a live connection.
+Never use a service-role or secret key in a public environment variable. `.env.local` and all other environment files except `.env.example` are ignored. Runtime guards reject known privileged key formats, but cannot prevent a mistakenly configured `NEXT_PUBLIC_` value from being bundled: only configure public keys.
 
-Phase 1 will implement `HistoryRepository` using Supabase, then switch `createHistoryRepository`. Before enabling writes, establish history ownership and privacy requirements, create the calculation table with row-level security and explicit access policies, and test cross-user isolation. Do not expose a shared anonymous table of private histories.
+### Table and permissions
+
+`public.calculations` contains `id uuid primary key default gen_random_uuid()`, `expression text not null`, `result text not null`, and `created_at timestamptz not null default now()`. Expression/result lengths are bounded to 256/64 characters. An index supports newest-first retrieval.
+
+RLS is enabled. `calculations_anon_select` allows the `anon` role to read all rows; `calculations_anon_insert` allows it to insert. Grants restrict INSERT to `expression` and `result`, so the database supplies IDs and timestamps. There are no UPDATE or DELETE grants/policies, auth flows, or privileged functions. Shared history has no clear button. The local-only fallback retains its existing clear action.
+
+This is intentionally **public history**, not private per-person storage. All visitors can read all rows and submit data. The ten-record limit controls the app's query, not what the public API permits people to read. Do not enter private information. RLS does not provide rate limiting or prevent anonymous submissions from consuming storage.
+
+### Persistence and failure behavior
+
+The app loads history on mount and after each completed calculation, using `created_at DESC, id DESC` with `limit(10)` in the database query. Each insert sends only expression and result. No realtime subscription or polling is added; reload to see other visitors' newest work.
+
+Requests have a five-second abort timeout and SDK retries disabled. A failure switches the current page to cached/session-local history with a subtle offline message. The latest cached rows and new local calculations remain available until refresh. Reload reconnects; unsaved local entries are **not uploaded or replayed**. A write that timed out may already have reached the database, so automatic replay could duplicate it. Database errors are sanitized and never block calculator input. Remote strings render as React text, never HTML.
 
 ## Vercel preparation
 
-The production build uses Next.js defaults and requires no external font fetches or credentials. Phase 1 will connect the approved Git repository to Vercel, use `npm run build`, configure public Supabase variables for the appropriate environments, and verify the deployed application. No deployment or Git push has been performed in Phase 0.
+The production build uses Next.js defaults and requires no external font fetches or credentials. A later deployment phase will connect the approved Git repository to Vercel, use `npm run build`, configure public Supabase variables for the appropriate environments, and verify the deployed application. No deployment or Git push has been performed.
 
-See [the Phase 0 implementation report](docs/phase-0.md) for decisions, verification, and deferred work.
+See [Phase 0](docs/phase-0.md) for the original foundation and [Phase 1](docs/phase-1.md) for persistence decisions, verification, and the remaining live setup steps.
 
 Reference documentation: [Next.js installation](https://nextjs.org/docs/app/getting-started/installation), [Supabase client initialization](https://supabase.com/docs/reference/javascript/initializing).

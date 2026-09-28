@@ -1,11 +1,16 @@
 import type { CalculationRecord } from "@/types/calculation";
+import type { HistoryStatus } from "@/repositories/history";
 export function HistoryPanel({
   records,
   onClear,
   error,
+  loading,
+  status,
 }: {
   records: CalculationRecord[];
-  onClear: () => void;
+  onClear?: () => void;
+  loading: boolean;
+  status: HistoryStatus;
   error: string | null;
 }) {
   return (
@@ -20,23 +25,31 @@ export function HistoryPanel({
             </span>
           </h2>
         </div>
-        <button
-          className="text-button"
-          disabled={!records.length}
-          onClick={onClear}
-        >
-          Clear history
-        </button>
+        {onClear && (
+          <button
+            className="text-button"
+            disabled={loading || !records.length}
+            onClick={onClear}
+          >
+            Clear history
+          </button>
+        )}
       </div>
       <p className="history-caption">
-        Your last 10 calculations, all in one place.
+        {status === "local"
+          ? "Your last 10 calculations, all in one place."
+          : "Shared public history · latest 10 calculations."}
       </p>
       {error && (
-        <p role="alert" className="history-error">
+        <p role="status" className="history-error">
           {error}
         </p>
       )}
-      {records.length ? (
+      {loading ? (
+        <div className="empty-history" role="status">
+          <p>Loading history…</p>
+        </div>
+      ) : records.length ? (
         <ol className="history-list">
           {records.map((record, index) => (
             <li key={record.id}>
@@ -68,9 +81,30 @@ export function HistoryPanel({
           <span className="empty-rule" />
         </div>
       )}
-      <div className="history-note">
+      {status === "offline" && (
+        <p className="history-caption">
+          New calculations stay on this page. Reload to reconnect; local entries
+          are not synced.
+        </p>
+      )}
+      <div className="history-note" role="status">
         <span className="status-dot" />
-        Session history<span>Clears on refresh</span>
+        <span>
+          {status === "shared"
+            ? "Shared history"
+            : status === "offline"
+              ? "History offline"
+              : "Session history"}
+        </span>
+        <span>
+          {loading
+            ? "Connecting…"
+            : status === "shared"
+              ? "Public · saved to Supabase"
+              : status === "offline"
+                ? "Using local history"
+                : "Clears on refresh"}
+        </span>
       </div>
     </aside>
   );
