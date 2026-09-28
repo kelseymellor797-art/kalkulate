@@ -36,6 +36,25 @@ test("keyboard, pointer, history and recovery work without credentials", async (
   await expect(display).toHaveText("0");
   expect(errors).toEqual([]);
 });
+test("graph mode plots, manages, and resets multiple functions", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("tab", { name: "Graph" }).click();
+  await expect(page.getByRole("region", { name: "Graph calculator" })).toBeVisible();
+  const input = page.getByRole("textbox", { name: /Function/ });
+  await expect(input).toHaveValue("y = x^2");
+  await page.getByRole("button", { name: "Plot function" }).click();
+  await input.fill("y = sin(x)");
+  await page.getByRole("button", { name: "Plot function" }).click();
+  await expect(page.getByRole("list").getByRole("listitem")).toHaveCount(2);
+  await page.getByRole("button", { name: /Hide y = x\^2/ }).click();
+  await expect(page.getByRole("button", { name: /Show y = x\^2/ })).toBeVisible();
+  await page.getByRole("button", { name: /Remove y = sin\(x\)/ }).click();
+  await page.getByRole("button", { name: "Clear functions" }).click();
+  await expect(page.getByText("No curves yet.")).toBeVisible();
+  await page.getByRole("tab", { name: "Basic" }).click();
+  await page.getByRole("button", { name: "7", exact: true }).click();
+  await expect(page.getByLabel("Calculator display")).toHaveText("7");
+});
 for (const width of [320, 390, 1440]) {
   test(`accessible layout at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 1000 });

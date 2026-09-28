@@ -34,6 +34,8 @@ For first-time browser testing, run `npx playwright install chromium`. The brows
 
 ## Calculator behavior
 
+Use the **Basic / Graph** mode switch to move between everyday calculations and a local 2D graphing workspace. Graph mode accepts `y = x^2` or an expression such as `sin(x)`, supports `+ - * / ^`, parentheses, `x`, `sin`, `cos`, `tan`, `sqrt`, and `abs`, and safely parses expressions without JavaScript execution. Add multiple curves, hide/show or remove individual functions, clear the graph tape, and use the zoom/reset controls to inspect the Cartesian plane. Graph expressions are session-only; standard calculation history continues to use Supabase.
+
 Operations evaluate immediately, left to right: `2 + 3 × 4 = 20`. Pressing another operator replaces a pending operator. Equals requires two operands and does not repeat a previous operation. A digit after equals starts a new calculation; an operator continues from the result.
 
 Percentage divides the current operand by 100 (`50 % = 0.5`); it does not compute a relative percentage of the previous operand. Sign toggle and percentage apply to an entered operand, not a pending one. AC resets calculator state without deleting history. Backspace edits active input; a completed result is preserved until new input or AC.

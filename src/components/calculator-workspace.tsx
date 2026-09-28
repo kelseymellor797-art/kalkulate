@@ -7,6 +7,7 @@ import type { CalculationRecord } from "@/types/calculation";
 import { CalculatorDisplay } from "./calculator-display";
 import { Keypad } from "./keypad";
 import { HistoryPanel } from "./history-panel";
+import { GraphingWorkspace } from "./graphing-workspace";
 
 export function CalculatorWorkspace() {
   const [state, setState] = useState(initialState);
@@ -17,6 +18,7 @@ export function CalculatorWorkspace() {
   const [loading, setLoading] = useState(true);
   const [historyStatus, setHistoryStatus] = useState(repository.status);
   const [clearing, setClearing] = useState(false);
+  const [mode, setMode] = useState<"basic" | "graph">("basic");
   const queue = useRef(Promise.resolve());
   const updateHistory = useCallback(
     (operation: () => Promise<void>) => {
@@ -85,7 +87,11 @@ export function CalculatorWorkspace() {
   }, [onAction]);
   return (
     <>
-      <div className="workspace">
+      <div className="mode-switcher" role="tablist" aria-label="Calculator mode">
+        <button role="tab" aria-selected={mode === "basic"} className={mode === "basic" ? "mode-active" : ""} onClick={() => setMode("basic")}>Basic</button>
+        <button role="tab" aria-selected={mode === "graph"} className={mode === "graph" ? "mode-active" : ""} onClick={() => setMode("graph")}>Graph</button>
+      </div>
+      {mode === "graph" ? <GraphingWorkspace /> : <div className="workspace">
         <section className="calculator" aria-label="Standard calculator">
           <div className="calculator-bar">
             <span>
@@ -113,8 +119,8 @@ export function CalculatorWorkspace() {
           clearing={clearing}
           onClear={clearHistory}
         />
-      </div>
-      <details className="keyboard-help">
+      </div>}
+      {mode === "basic" && <details className="keyboard-help">
         <summary>
           <span aria-hidden="true">⌨</span> Keyboard shortcuts <span>+</span>
         </summary>
@@ -127,7 +133,7 @@ export function CalculatorWorkspace() {
           Operations run left to right. Percentage divides the current value by
           100. Up to 16 significant digits; supported range 10⁻¹⁰⁰ to 10¹⁰⁰.
         </p>
-      </details>
+      </details>}
     </>
   );
 }
