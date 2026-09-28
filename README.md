@@ -1,6 +1,6 @@
 # KALKULATE
 
-A focused everyday calculator with a graphite interface, lime accents, keyboard controls, and recent calculation history. Phase 1 adds shared anonymous Supabase history without accounts, login, or authentication. The persistence code is ready; live database setup requires an approved KALKULATE project. Deployment is deferred.
+A focused everyday calculator with a graphite interface, lime accents, keyboard controls, and recent calculation history. Phase 1 adds shared anonymous Supabase history without accounts, login, or authentication. Live Supabase persistence has been verified against the approved KALKULATE project. GitHub and Vercel deployment is the current phase.
 
 ## Stack
 
@@ -76,6 +76,6 @@ Requests have a five-second abort timeout and SDK retries disabled. A failure sw
 
 The production build uses Next.js defaults and requires no external font fetches or credentials. A later deployment phase will connect the approved Git repository to Vercel, use `npm run build`, configure public Supabase variables for the appropriate environments, and verify the deployed application. No deployment or Git push has been performed.
 
-See [Phase 0](docs/phase-0.md) for the original foundation and [Phase 1](docs/phase-1.md) for persistence decisions, verification, and the remaining live setup steps.
+See [Phase 0](docs/phase-0.md) for the original foundation and [Phase 1](docs/phase-1.md) for persistence decisions and setup instructions. Live verification subsequently confirmed INSERT, SELECT, reload persistence, newest-first/ten-row behavior, and the intended anonymous permission restrictions.
 
 Reference documentation: [Next.js installation](https://nextjs.org/docs/app/getting-started/installation), [Supabase client initialization](https://supabase.com/docs/reference/javascript/initializing).
