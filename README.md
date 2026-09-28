@@ -1,6 +1,10 @@
 # KALKULATE
 
-A focused everyday calculator with a graphite interface, lime accents, keyboard controls, and recent calculation history. Phase 1 adds shared anonymous Supabase history without accounts, login, or authentication. Live Supabase persistence has been verified against the approved KALKULATE project. GitHub and Vercel deployment is the current phase.
+A focused everyday calculator with a graphite interface, lime accents, keyboard controls, and recent calculation history. Phase 1 adds shared anonymous Supabase history without accounts, login, or authentication. Live Supabase persistence is verified on the deployed application.
+
+**Live demo:** https://kalkulate-five.vercel.app
+
+**Source:** https://github.com/kelseymellor797-art/kalkulate
 
 ## Stack
 
@@ -72,10 +76,26 @@ The app loads history on mount and after each completed calculation, using `crea
 
 Requests have a five-second abort timeout and SDK retries disabled. A failure switches the current page to cached/session-local history with a subtle offline message. The latest cached rows and new local calculations remain available until refresh. Reload reconnects; unsaved local entries are **not uploaded or replayed**. A write that timed out may already have reached the database, so automatic replay could duplicate it. Database errors are sanitized and never block calculator input. Remote strings render as React text, never HTML.
 
-## Vercel preparation
+## Production deployment
 
-The production build uses Next.js defaults and requires no external font fetches or credentials. A later deployment phase will connect the approved Git repository to Vercel, use `npm run build`, configure public Supabase variables for the appropriate environments, and verify the deployed application. No deployment or Git push has been performed.
+The public app is hosted on Vercel as `kalkulate` in the `kelseymellor797-arts-projects` team. Production uses the approved shared Supabase database. The Vercel Production environment contains `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`; no service-role key is used.
 
-See [Phase 0](docs/phase-0.md) for the original foundation and [Phase 1](docs/phase-1.md) for persistence decisions and setup instructions. Live verification subsequently confirmed INSERT, SELECT, reload persistence, newest-first/ten-row behavior, and the intended anonymous permission restrictions.
+Deployment currently uses the authenticated Vercel CLI from a clean, pushed `main` checkout:
+
+```sh
+npm ci
+npm test
+npm run lint
+npm run typecheck
+npm run build
+git push origin main
+npx vercel deploy --prod --yes --scope kelseymellor797-arts-projects
+```
+
+On a new checkout, link the existing project with `npx vercel link --yes --project kalkulate --scope kelseymellor797-arts-projects`. Supply public environment values through Vercel project settings or `vercel env add`; never commit them. `.vercelignore` excludes local environment files, build caches, and verification artifacts from CLI uploads. No additional product features are required to deploy.
+
+The Vercel GitHub integration is connected to this repository, so future pushes to `main` can trigger production deployments. Preview/development Supabase variables are deliberately not configured.
+
+After each deployment, open the public URL, complete a calculation, reload and confirm shared history persists, and check desktop/mobile layouts. See [Phase 2](docs/phase-2.md) for deployment evidence and the release revision reference. [Phase 0](docs/phase-0.md) and [Phase 1](docs/phase-1.md) retain the historical implementation reports; their earlier pending-live statements were superseded by successful live verification and deployment.
 
 Reference documentation: [Next.js installation](https://nextjs.org/docs/app/getting-started/installation), [Supabase client initialization](https://supabase.com/docs/reference/javascript/initializing).
