@@ -88,6 +88,19 @@ describe("Supabase history through the real SDK with mocked transport", () => {
       new SupabaseHistoryRepository(client, 10).list(),
     ).rejects.toThrow("History unavailable");
   });
+  it("deletes all rows through the database and never sends a row payload", async () => {
+    const { repository, fetcher } = setup(new Response(null, { status: 204 }));
+    await repository.clear();
+    const call = fetcher.mock.calls[0] as unknown as [string, RequestInit];
+    const url = new URL(call[0]);
+    expect(call[1].method).toBe("DELETE");
+    expect(url.searchParams.get("id")).toBe("not.is.null");
+    expect(call[1].body).toBeUndefined();
+  });
+  it("sanitizes delete failures", async () => {
+    const { repository } = setup(Response.json({ message: "private database detail" }, { status: 401 }));
+    await expect(repository.clear()).rejects.toThrow("History unavailable");
+  });
 });
 describe("fallback", () => {
   it("keeps cached history and failed saves without retrying remote writes", async () => {
@@ -95,6 +108,7 @@ describe("fallback", () => {
       status: "shared" as const,
       list: vi.fn().mockResolvedValue(rows),
       add: vi.fn().mockRejectedValue(new Error("offline")),
+      clear: vi.fn().mockResolvedValue(undefined),
     };
     const repository = new ResilientHistoryRepository(remote);
     expect(await repository.list()).toEqual(rows);
@@ -104,13 +118,15 @@ describe("fallback", () => {
     await repository.add({ expression: "30 + 1", result: "31" });
     expect(await repository.list()).toHaveLength(10);
     expect(remote.add).toHaveBeenCalledTimes(1);
-    expect("clear" in repository).toBe(false);
+    await expect(repository.clear()).rejects.toThrow("History unavailable");
+    expect(remote.clear).not.toHaveBeenCalled();
   });
   it("retains a successful save locally if the following read fails", async () => {
     const repository = new ResilientHistoryRepository({
       status: "shared",
       add: vi.fn().mockResolvedValue(undefined),
       list: vi.fn().mockRejectedValue(new Error("offline")),
+      clear: vi.fn(),
     });
     await repository.add({ expression: "1 + 1", result: "2" });
     expect((await repository.list())[0].result).toBe("2");
@@ -121,6 +137,7 @@ describe("fallback", () => {
       status: "shared",
       add: vi.fn(),
       list: vi.fn().mockRejectedValue(new Error("offline")),
+      clear: vi.fn(),
     });
     expect(await repository.list()).toEqual([]);
     expect(repository.status).toBe("offline");

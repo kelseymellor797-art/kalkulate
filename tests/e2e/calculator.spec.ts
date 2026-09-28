@@ -27,6 +27,7 @@ test("keyboard, pointer, history and recovery work without credentials", async (
   await page
     .getByRole("button", { name: "Clear history", exact: true })
     .click();
+  await page.getByRole("dialog").getByRole("button", { name: "Clear history" }).click();
   await expect(page.getByText("A clean slate.")).toBeVisible();
   await page.getByRole("button", { name: "7", exact: true }).focus();
   await page.keyboard.press("Enter");

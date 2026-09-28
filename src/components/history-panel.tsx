@@ -1,18 +1,30 @@
 import type { CalculationRecord } from "@/types/calculation";
 import type { HistoryStatus } from "@/repositories/history";
+import { useState } from "react";
 export function HistoryPanel({
   records,
   onClear,
   error,
   loading,
   status,
+  clearing,
 }: {
   records: CalculationRecord[];
-  onClear?: () => void;
+  onClear: () => Promise<void>;
   loading: boolean;
   status: HistoryStatus;
   error: string | null;
+  clearing: boolean;
 }) {
+  const [confirming, setConfirming] = useState(false);
+  const requestClear = async () => {
+    try {
+      await onClear();
+      setConfirming(false);
+    } catch {
+      // The parent owns the user-facing error and preserves the records.
+    }
+  };
   return (
     <aside className="history" aria-labelledby="history-title">
       <div className="history-top">
@@ -25,15 +37,13 @@ export function HistoryPanel({
             </span>
           </h2>
         </div>
-        {onClear && (
-          <button
-            className="text-button"
-            disabled={loading || !records.length}
-            onClick={onClear}
-          >
-            Clear history
-          </button>
-        )}
+        <button
+          className="text-button"
+          disabled={loading || clearing || !records.length}
+          onClick={() => setConfirming(true)}
+        >
+          {clearing ? "Clearing…" : "Clear history"}
+        </button>
       </div>
       <p className="history-caption">
         {status === "local"
@@ -86,6 +96,25 @@ export function HistoryPanel({
           New calculations stay on this page. Reload to reconnect; local entries
           are not synced.
         </p>
+      )}
+      {confirming && (
+        <div
+          className="history-confirm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="clear-history-title"
+        >
+          <h3 id="clear-history-title">Clear calculation history?</h3>
+          <p>This removes the saved calculation history for everyone using this demo.</p>
+          <div className="history-confirm-actions">
+            <button className="text-button" disabled={clearing} onClick={() => setConfirming(false)}>
+              Cancel
+            </button>
+            <button className="confirm-button" disabled={clearing} onClick={() => void requestClear()}>
+              {clearing ? "Clearing…" : "Clear history"}
+            </button>
+          </div>
+        </div>
       )}
       <div className="history-note" role="status">
         <span className="status-dot" />

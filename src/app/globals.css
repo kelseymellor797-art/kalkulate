@@ -418,6 +418,44 @@ h2 {
   margin-left: auto;
   color: var(--muted);
 }
+.history-confirm {
+  margin: 18px 0 0;
+  padding: 15px;
+  border: 1px solid #5c6b49;
+  border-radius: 8px;
+  background: #242b20;
+}
+.history-confirm h3 {
+  margin: 0 0 7px;
+  font-size: 14px;
+  font-weight: 500;
+}
+.history-confirm p {
+  margin: 0;
+  color: var(--muted);
+  font: 11px/1.6 Arial, sans-serif;
+}
+.history-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+.confirm-button {
+  border: 1px solid #d1fa85;
+  border-radius: 5px;
+  padding: 8px 10px;
+  background: var(--lime);
+  color: #17200f;
+  font-size: 10px;
+}
+.confirm-button:hover:enabled {
+  background: #e1ffac;
+}
+.confirm-button:disabled {
+  opacity: 0.55;
+}
 .history-list {
   list-style: none;
   padding: 0;

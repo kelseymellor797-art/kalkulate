@@ -6,7 +6,7 @@ const row = {
   result: "9",
   created_at: "2026-09-28T12:00:00Z",
 };
-test("loads, saves, and reloads shared history; never offers remote deletion", async ({
+test("loads, saves, and reloads shared history; confirms and clears remotely", async ({
   page,
 }) => {
   const rows = [row];
@@ -27,6 +27,9 @@ test("loads, saves, and reloads shared history; never offers remote deletion", a
         created_at: "2026-09-28T13:00:00Z",
       });
       await route.fulfill({ status: 201, body: "" });
+    } else if (request.method() === "DELETE") {
+      rows.splice(0);
+      await route.fulfill({ status: 204, body: "" });
     } else {
       const url = new URL(request.url());
       expect(url.searchParams.get("limit")).toBe("10");
@@ -36,9 +39,7 @@ test("loads, saves, and reloads shared history; never offers remote deletion", a
   });
   await page.goto("/");
   await expect(page.locator(".record-result").first()).toHaveText("9");
-  await expect(page.getByRole("button", { name: "Clear history" })).toHaveCount(
-    0,
-  );
+  await expect(page.getByRole("button", { name: "Clear history" }).first()).toBeEnabled();
   await page.keyboard.type("2+3=");
   await expect(page.locator(".record-result").first()).toHaveText("5");
   await page.reload();
@@ -48,6 +49,15 @@ test("loads, saves, and reloads shared history; never offers remote deletion", a
   expect(methods.every((method) => method === "GET" || method === "POST")).toBe(
     true,
   );
+  await page.getByRole("button", { name: "Clear history" }).first().click();
+  await expect(page.getByRole("dialog")).toContainText("Clear calculation history?");
+  await page.getByRole("button", { name: "Cancel" }).click();
+  await expect(page.locator(".record-result").first()).toHaveText("5");
+  await page.getByRole("button", { name: "Clear history" }).first().click();
+  await page.getByRole("dialog").getByRole("button", { name: "Clear history" }).click();
+  await expect(page.getByText("A clean slate.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Clear history" }).first()).toBeDisabled();
+  expect(methods).toContain("DELETE");
 });
 test("loading and network failure leave calculator usable", async ({
   page,
@@ -97,4 +107,23 @@ test("failed saves retain local results and safe text rendering", async ({
   await page.keyboard.type("9*9=");
   await expect(page.getByLabel("Calculator display")).toHaveText("81");
   await expect(page.locator(".record-result").first()).toHaveText("81");
+});
+
+test("failed delete keeps history visible and calculator usable", async ({ page }) => {
+  await page.route(endpoint, async (route) => {
+    if (route.request().method() === "DELETE") {
+      await route.fulfill({ status: 503, json: { message: "private detail" } });
+      return;
+    }
+    await route.fulfill({ json: [row] });
+  });
+  await page.goto("/");
+  await expect(page.locator(".record-result").first()).toHaveText("9");
+  await page.getByRole("button", { name: "Clear history" }).first().click();
+  await page.getByRole("dialog").getByRole("button", { name: "Clear history" }).click();
+  await expect(page.locator(".record-result").first()).toHaveText("9");
+  await expect(page.getByText("History could not be updated. You can keep calculating.")).toBeVisible();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.keyboard.type("6*7=");
+  await expect(page.getByLabel("Calculator display")).toHaveText("42");
 });

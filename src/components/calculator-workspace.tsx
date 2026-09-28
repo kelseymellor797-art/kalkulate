@@ -16,27 +16,31 @@ export function CalculatorWorkspace() {
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [historyStatus, setHistoryStatus] = useState(repository.status);
+  const [clearing, setClearing] = useState(false);
   const queue = useRef(Promise.resolve());
   const updateHistory = useCallback(
     (operation: () => Promise<void>) => {
-      queue.current = queue.current
+      const task = queue.current
         .then(async () => {
           await operation();
           setRecords(await repository.list());
           setHistoryStatus(repository.status);
           setHistoryError(null);
         })
-        .catch(() =>
+        .catch((error) => {
           setHistoryError(
             "History could not be updated. You can keep calculating.",
-          ),
-        )
+          );
+          throw error;
+        })
         .finally(() => setLoading(false));
+      queue.current = task.catch(() => undefined);
+      return task;
     },
     [repository],
   );
   useEffect(() => {
-    updateHistory(async () => {});
+    void updateHistory(async () => {}).catch(() => undefined);
   }, [updateHistory]);
   const onAction = useCallback(
     (action: string) => {
@@ -44,10 +48,19 @@ export function CalculatorWorkspace() {
       current.current = next;
       setState(next);
       const calculation = next.completed;
-      if (calculation) updateHistory(() => repository.add(calculation));
+      if (calculation) void updateHistory(() => repository.add(calculation)).catch(() => undefined);
     },
     [repository, updateHistory],
   );
+  const clearHistory = useCallback(async () => {
+    if (clearing) return;
+    setClearing(true);
+    try {
+      await updateHistory(() => repository.clear());
+    } finally {
+      setClearing(false);
+    }
+  }, [clearing, repository, updateHistory]);
   useEffect(() => {
     const handleKey = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement;
@@ -97,11 +110,8 @@ export function CalculatorWorkspace() {
           error={historyError}
           loading={loading}
           status={historyStatus}
-          onClear={
-            repository.clear
-              ? () => updateHistory(() => repository.clear!())
-              : undefined
-          }
+          clearing={clearing}
+          onClear={clearHistory}
         />
       </div>
       <details className="keyboard-help">

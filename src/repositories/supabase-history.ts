@@ -46,4 +46,13 @@ export class SupabaseHistoryRepository implements HistoryRepository {
       throw new Error("History unavailable");
     return data;
   }
+  async clear() {
+    const { error } = await this.client
+      .from("calculations")
+      .delete()
+      .not("id", "is", null)
+      .abortSignal(AbortSignal.timeout(this.timeoutMs))
+      .retry(false);
+    if (error) throw new Error("History unavailable");
+  }
 }

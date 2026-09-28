@@ -7,8 +7,7 @@ export interface HistoryRepository {
   readonly status: HistoryStatus;
   list(): Promise<CalculationRecord[]>;
   add(calculation: NewCalculation): Promise<void>;
-  /** Only session-local history can be cleared. Shared data is append-only. */
-  clear?: () => Promise<void>;
+  clear(): Promise<void>;
 }
 
 export class MemoryHistoryRepository implements HistoryRepository {
@@ -61,6 +60,11 @@ export class ResilientHistoryRepository implements HistoryRepository {
         this.status = "offline";
       }
     }
+  }
+  async clear() {
+    if (this.status !== "shared") throw new Error("History unavailable");
+    await this.remote.clear();
+    await this.fallback.clear();
   }
 }
 export function createHistoryRepository(): HistoryRepository {

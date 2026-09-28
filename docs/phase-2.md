@@ -55,6 +55,12 @@ Final local gates: 41 unit tests passed; ESLint passed; separate TypeScript vali
 
 Repository/history scanning found no private credentials. GitHub contains the README, source, and lockfile, with no `.env.local`. Only the public Supabase URL/key are intentionally browser-side. Read-only database checks confirm RLS remains enabled, with anonymous SELECT and INSERT(expression, result), and no UPDATE/DELETE or explicit id/timestamp INSERT privilege. Destructive permission tests were not rerun in deployment. No accounts, auth routes, OAuth, tracking services, or unrelated features were added.
 
+## Post-deployment clear-history update
+
+The shared public history panel now has a secondary Clear history control. It opens an explicit confirmation dialog, supports Cancel, shows a clearing state, prevents duplicate requests, and preserves the visible rows if DELETE fails. The repository owns clearing through `HistoryRepository.clear`; the UI contains no raw Supabase calls. The in-memory adapter clears locally, while the resilient adapter clears its cache only after the remote DELETE succeeds.
+
+The approved-project migration is [`supabase/migrations/20260928_allow_anon_delete_calculations.sql`](../supabase/migrations/20260928_allow_anon_delete_calculations.sql). It grants DELETE to `anon` and adds a `using (true)` DELETE policy on `public.calculations`. SELECT and INSERT(expression, result) remain enabled, RLS remains enabled, UPDATE remains denied, and no authentication or service-role key is involved.
+
 ## Submission
 
 The live demo and public source repository are ready to share. Native GitHub-to-Vercel auto-deploy authorization is the remaining convenience setup; direct CLI deployment is documented and functional. Confirm any external internship rubric requirements (submission form, presentation, or screenshots) separately.

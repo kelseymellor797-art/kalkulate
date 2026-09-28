@@ -66,7 +66,7 @@ Never use a service-role or secret key in a public environment variable. `.env.l
 
 `public.calculations` contains `id uuid primary key default gen_random_uuid()`, `expression text not null`, `result text not null`, and `created_at timestamptz not null default now()`. Expression/result lengths are bounded to 256/64 characters. An index supports newest-first retrieval.
 
-RLS is enabled. `calculations_anon_select` allows the `anon` role to read all rows; `calculations_anon_insert` allows it to insert. Grants restrict INSERT to `expression` and `result`, so the database supplies IDs and timestamps. There are no UPDATE or DELETE grants/policies, auth flows, or privileged functions. Shared history has no clear button. The local-only fallback retains its existing clear action.
+RLS is enabled. `calculations_anon_select` allows the `anon` role to read all rows; `calculations_anon_insert` allows it to insert; and the Phase 2 clear-history migration adds only `calculations_anon_delete`, allowing the public demo to delete shared rows after confirmation. Grants restrict INSERT to `expression` and `result`, so the database supplies IDs and timestamps. UPDATE remains denied; there are no auth flows or privileged functions. Clear history is a two-step confirmation and keeps the existing rows visible if deletion fails.
 
 This is intentionally **public history**, not private per-person storage. All visitors can read all rows and submit data. The ten-record limit controls the app's query, not what the public API permits people to read. Do not enter private information. RLS does not provide rate limiting or prevent anonymous submissions from consuming storage.
 
