@@ -72,7 +72,10 @@ test("loading and network failure leave calculator usable", async ({
   });
   await page.goto("/");
   await expect(page.getByText("Loading history…")).toBeVisible();
-  await page.keyboard.type("8*8=");
+  await page.getByRole("button", { name: "8", exact: true }).click();
+  await page.getByRole("button", { name: "Multiply", exact: true }).click();
+  await page.getByRole("button", { name: "8", exact: true }).click();
+  await page.getByRole("button", { name: "Equals", exact: true }).click();
   await expect(page.getByLabel("Calculator display")).toHaveText("64");
   release();
   await expect(
@@ -126,4 +129,32 @@ test("failed delete keeps history visible and calculator usable", async ({ page 
   await expect(page.getByRole("dialog")).toBeVisible();
   await page.keyboard.type("6*7=");
   await expect(page.getByLabel("Calculator display")).toHaveText("42");
+});
+
+test("prevents duplicate clear requests while deletion is pending", async ({ page }) => {
+  let release!: () => void;
+  const pending = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  let deletes = 0;
+  let cleared = false;
+  await page.route(endpoint, async (route) => {
+    if (route.request().method() === "DELETE") {
+      deletes += 1;
+      await pending;
+      cleared = true;
+      await route.fulfill({ status: 204, body: "" });
+      return;
+    }
+    await route.fulfill({ json: cleared ? [] : [row] });
+  });
+  await page.goto("/");
+  await expect(page.locator(".record-result").first()).toHaveText("9");
+  await page.getByRole("button", { name: "Clear history" }).first().click();
+  const confirm = page.getByRole("dialog").getByRole("button", { name: "Clear history" });
+  await confirm.click();
+  await expect(page.getByRole("dialog").getByRole("button").last()).toBeDisabled();
+  expect(deletes).toBe(1);
+  release();
+  await expect(page.getByText("A clean slate.")).toBeVisible();
 });

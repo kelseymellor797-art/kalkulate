@@ -61,6 +61,8 @@ The shared public history panel now has a secondary Clear history control. It op
 
 The approved-project migration is [`supabase/migrations/20260928_allow_anon_delete_calculations.sql`](../supabase/migrations/20260928_allow_anon_delete_calculations.sql). It grants DELETE to `anon` and adds a `using (true)` DELETE policy on `public.calculations`. SELECT and INSERT(expression, result) remain enabled, RLS remains enabled, UPDATE remains denied, and no authentication or service-role key is involved.
 
+Live verification on `https://kalkulate-five.vercel.app` created three calculations, reloaded them, canceled once, confirmed deletion, verified zero rows through the approved Supabase project, reloaded the empty state, and saved `8 + 9 = 17` afterward. The new row persisted after reload. The live DELETE request succeeded; anonymous UPDATE remained denied with HTTP 401 / PostgreSQL `42501`; RLS inspection returned enabled with exactly the SELECT, INSERT, and DELETE anon policies. No browser errors occurred.
+
 ## Submission
 
 The live demo and public source repository are ready to share. Native GitHub-to-Vercel auto-deploy authorization is the remaining convenience setup; direct CLI deployment is documented and functional. Confirm any external internship rubric requirements (submission form, presentation, or screenshots) separately.
