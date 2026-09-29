@@ -40,6 +40,7 @@ test("graph mode plots, manages, and resets multiple functions", async ({ page }
   await page.goto("/");
   await page.getByRole("tab", { name: "Graph" }).click();
   await expect(page.getByRole("region", { name: "Graph calculator" })).toBeVisible();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   const input = page.getByRole("textbox", { name: /Function/ });
   await expect(input).toHaveValue("y = x^2");
   await page.getByRole("button", { name: "Plot function" }).click();
@@ -61,6 +62,21 @@ test("graph mode plots, manages, and resets multiple functions", async ({ page }
   await page.getByRole("button", { name: /Hide y = x\^2/ }).click();
   await expect(page.getByRole("button", { name: /Show y = x\^2/ })).toBeVisible();
   await page.getByRole("button", { name: /Remove y = sin\(x\)/ }).click();
+  const graph = page.locator(".graph-window");
+  await expect(graph).toHaveAttribute(
+    "aria-label",
+    /Viewport x -10\.0 to 10\.0, y -10\.0 to 10\.0\./,
+  );
+  await page.getByRole("button", { name: "Zoom in" }).click();
+  await expect(graph).toHaveAttribute(
+    "aria-label",
+    /Viewport x -7\.5 to 7\.5, y -7\.5 to 7\.5\./,
+  );
+  await page.getByRole("button", { name: "Reset view" }).click();
+  await expect(graph).toHaveAttribute(
+    "aria-label",
+    /Viewport x -10\.0 to 10\.0, y -10\.0 to 10\.0\./,
+  );
   await page.getByRole("button", { name: "Clear functions" }).click();
   await expect(page.getByText("No curves yet.")).toBeVisible();
   await page.getByRole("tab", { name: "Basic" }).click();

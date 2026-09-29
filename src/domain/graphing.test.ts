@@ -16,6 +16,13 @@ describe("graph expression parser", () => {
     expect(segments.length).toBeGreaterThan(1);
     expect(segments.flat().every((point) => Number.isFinite(point.y))).toBe(true);
   });
+  it("breaks sampled curves at discontinuities on a non-default viewport", () => {
+    const viewport = { xMin: -2, xMax: 2, yMin: -50, yMax: 50 };
+    const segments = sampleGraph(parseGraphExpression("1/x").ast, viewport, 101);
+    expect(segments.length).toBeGreaterThan(1);
+    expect(segments.flat().every((point) => Number.isFinite(point.y))).toBe(true);
+    expect(segments.flat().every((point) => point.x >= viewport.xMin && point.x <= viewport.xMax)).toBe(true);
+  });
   it("evaluates trace values and safely excludes undefined results", () => {
     expect(evaluateTrace(parseGraphExpression("x^2").ast, 2).formatted).toBe("4");
     expect(evaluateTrace(parseGraphExpression("2x + 3").ast, 2).formatted).toBe("7");

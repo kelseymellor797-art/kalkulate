@@ -1,15 +1,11 @@
 import Decimal from "decimal.js";
+import type { NewCalculation } from "@/types/calculation";
 
 const NumberValue = Decimal.clone({
   precision: 24,
   rounding: Decimal.ROUND_HALF_UP,
 });
 export type Operator = "+" | "-" | "*" | "/";
-export type Action = string;
-export interface Calculation {
-  expression: string;
-  result: string;
-}
 export interface CalculatorState {
   input: string;
   left: string | null;
@@ -18,7 +14,7 @@ export interface CalculatorState {
   finished: boolean;
   expression: string;
   error: string | null;
-  completed: Calculation | null;
+  completed: NewCalculation | null;
 }
 export const initialState: CalculatorState = {
   input: "0",
@@ -30,7 +26,7 @@ export const initialState: CalculatorState = {
   error: null,
   completed: null,
 };
-export const symbol = (op: Operator) =>
+const symbol = (op: Operator) =>
   ({ "+": "+", "-": "−", "*": "×", "/": "÷" })[op];
 const format = (value: Decimal) => {
   if (
@@ -60,7 +56,7 @@ function calculate(left: string, right: string, op: Operator) {
 /** Immediate execution, left to right. Percent always divides the current operand by 100. */
 export function transition(
   previous: CalculatorState,
-  action: Action,
+  action: string,
 ): CalculatorState {
   if (action === "clear") return { ...initialState };
   let s: CalculatorState = { ...previous, completed: null };
@@ -149,7 +145,7 @@ export function transition(
   }
 }
 
-export function keyboardAction(key: string): Action | null {
+export function keyboardAction(key: string): string | null {
   if (/^[0-9.+\-*/%=]$/.test(key)) return key;
   return (
     (

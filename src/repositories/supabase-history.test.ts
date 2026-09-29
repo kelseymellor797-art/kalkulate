@@ -26,11 +26,16 @@ function setup(response: Response | (() => Promise<Response>)) {
   );
   return { repository: new SupabaseHistoryRepository(client, 10), fetcher };
 }
+// The mocked fetch is untyped; this gives its captured [url, init] call args
+// a real shape instead of repeating the same triple-cast at each call site.
+function lastCall(fetcher: { mock: { calls: unknown[][] } }) {
+  return fetcher.mock.calls[0] as unknown as [string, RequestInit];
+}
 describe("Supabase history through the real SDK with mocked transport", () => {
   it("inserts only expression and result, leaving defaults to the database", async () => {
     const { repository, fetcher } = setup(new Response(null, { status: 201 }));
     await repository.add({ expression: "2 + 3", result: "5" });
-    const call = fetcher.mock.calls[0] as unknown as [string, RequestInit];
+    const call = lastCall(fetcher);
     expect(call[0]).toContain("/rest/v1/calculations");
     expect(call[1].method).toBe("POST");
     expect(JSON.parse(call[1].body as string)).toEqual({
@@ -41,7 +46,7 @@ describe("Supabase history through the real SDK with mocked transport", () => {
   it("requests newest-first order and a server-side ten-row limit", async () => {
     const { repository, fetcher } = setup(Response.json(rows));
     expect(await repository.list()).toEqual(rows);
-    const url = new URL((fetcher.mock.calls[0] as unknown as [string])[0]);
+    const url = new URL(lastCall(fetcher)[0]);
     expect(url.searchParams.get("order")).toBe("created_at.desc,id.desc");
     expect(url.searchParams.get("limit")).toBe("10");
     expect(url.searchParams.get("select")).toBe(
@@ -91,7 +96,7 @@ describe("Supabase history through the real SDK with mocked transport", () => {
   it("deletes all rows through the database and never sends a row payload", async () => {
     const { repository, fetcher } = setup(new Response(null, { status: 204 }));
     await repository.clear();
-    const call = fetcher.mock.calls[0] as unknown as [string, RequestInit];
+    const call = lastCall(fetcher);
     const url = new URL(call[0]);
     expect(call[1].method).toBe("DELETE");
     expect(url.searchParams.get("id")).toBe("not.is.null");

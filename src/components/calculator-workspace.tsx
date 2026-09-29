@@ -41,9 +41,14 @@ export function CalculatorWorkspace() {
     },
     [repository],
   );
+  // Loads history on mount by running the queue with no calculation to add.
+  const refreshHistory = useCallback(
+    () => updateHistory(async () => {}),
+    [updateHistory],
+  );
   useEffect(() => {
-    void updateHistory(async () => {}).catch(() => undefined);
-  }, [updateHistory]);
+    void refreshHistory().catch(() => undefined);
+  }, [refreshHistory]);
   const onAction = useCallback(
     (action: string) => {
       const next = transition(current.current, action);

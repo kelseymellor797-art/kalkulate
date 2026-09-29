@@ -1,4 +1,5 @@
-const keys = [
+type KeypadKey = [label: string, action: string, aria?: string, kind?: string];
+const keys: KeypadKey[] = [
   ["AC", "clear", "Clear calculator", "utility"],
   ["±", "sign", "Toggle positive or negative", "utility"],
   ["%", "%", "Percentage", "utility"],
