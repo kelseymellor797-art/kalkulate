@@ -6,6 +6,8 @@ A focused everyday calculator with a graphite interface, lime accents, keyboard 
 
 **Source:** https://github.com/kelseymellor797-art/kalkulate
 
+This repository is feature-frozen after Phase 4. Future work should be a separately reviewed code-quality audit or maintenance fix, not an unplanned product expansion.
+
 ## Stack
 
 Next.js 16 App Router, React 19, TypeScript, Tailwind CSS 4 with custom design tokens, decimal.js, the official Supabase JavaScript client, Vitest, and Playwright with axe accessibility checks. `package-lock.json` pins the installed versions. Node 22+ is required; verified with Node 24.13.0 and npm 11.6.2.
@@ -51,6 +53,8 @@ Keyboard: `0–9`, `.`, `+`, `-`, `*`, `/`, `%`, `Enter`/`=`, `Escape`, `Backspa
 - `src/domain/calculator.ts`: pure state transition engine, decimal arithmetic, keyboard mapping; no React or persistence dependencies.
 - `src/types/calculation.ts`: record shape (`id`, `expression`, `result`, `created_at`), with numeric results stored as strings to preserve representation.
 - `src/repositories/history.ts`: asynchronous repository interface and per-workspace memory implementation, capped at the latest ten records. The workspace serializes initial loading and writes. A resilient wrapper caches history and handles storage failures independently of calculation. `src/repositories/supabase-history.ts` performs database queries.
+- `src/domain/graphing.ts`: safe expression parser/evaluator, bounded sampling, trace evaluation, numeric formatting, and coordinate transforms.
+- `src/components/graphing-workspace.tsx`, `graph-window.tsx`, and `function-tape.tsx`: session-local graph, trace, and function-tape presentation.
 - `src/lib/supabase.ts`: lazy, nullable client factory; no connection is created merely by importing it.
 - Colocated unit tests and `tests/e2e/`: regression checks.
 
@@ -99,5 +103,7 @@ On a new checkout, link the existing project with `npx vercel link --yes --proje
 The Vercel GitHub integration is connected to this repository, so future pushes to `main` can trigger production deployments. Preview/development Supabase variables are deliberately not configured.
 
 After each deployment, open the public URL, complete a calculation, reload and confirm shared history persists, and check desktop/mobile layouts. See [Phase 2](docs/phase-2.md) for deployment evidence and the release revision reference. [Phase 0](docs/phase-0.md) and [Phase 1](docs/phase-1.md) retain the historical implementation reports; their earlier pending-live statements were superseded by successful live verification and deployment.
+
+The feature-complete baseline is tagged `pre-claude-refactor`. Any later refactor should compare against that tag and preserve the documented behavior and quality gates.
 
 Reference documentation: [Next.js installation](https://nextjs.org/docs/app/getting-started/installation), [Supabase client initialization](https://supabase.com/docs/reference/javascript/initializing).
